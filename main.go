@@ -12,6 +12,22 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+func printEvent(e *v1.Event) {
+	/*
+	fmt.Printf("Name: %v\n", e.Name)
+	fmt.Printf("Message: %v\n", e.Message)
+	fmt.Printf("Reason: %v\n", e.Reason)
+	fmt.Printf("Source: %v\n", e.Source)
+	fmt.Printf("InvolvedObject: %v\n", e.InvolvedObject)
+	fmt.Printf("  Kind: %v\n", e.InvolvedObject.Kind)
+	fmt.Printf("  Name: %v\n", e.InvolvedObject.Name)
+        */
+	fmt.Printf("Reason: %v\n", e.Reason)
+	fmt.Printf("  Kind: %v\n", e.InvolvedObject.Kind)
+	fmt.Printf("  Name: %v\n", e.InvolvedObject.Name)
+	fmt.Println();
+}
+
 func main() {
 	// creates the in-cluster config
 
@@ -24,7 +40,7 @@ func main() {
 	if err != nil {
 		panic(err.Error())
 	}
-	eventInterface, err := clientset.Core().Events("").Watch(v1.ListOptions{})
+	eventInterface, err := clientset.CoreV1().Events("").Watch(v1.ListOptions{})
 	eventCh := eventInterface.ResultChan()
 	if err != nil {
 		panic(err.Error())
@@ -54,17 +70,21 @@ func main() {
 				//fmt.Printf("Name: %v, Message: %v", ev.Name, ev.Message);
 				switch event.Type {
 				case watch.Added:
-					fmt.Printf("Added: %v %v\n", ev.Name, ev.Message);
+					fmt.Println("## Added:")
+					printEvent(ev)
 				case watch.Modified:
-					fmt.Printf("Modified: %v %v\n", ev.Name, ev.Message);
+					fmt.Println("## Modified:")
+					printEvent(ev)
 				case watch.Deleted:
-					fmt.Printf("Deleted: %v %v\n", ev.Name, ev.Message);
+					fmt.Println("## Deleted:")
+					printEvent(ev)
 				case watch.Error:
-					fmt.Printf("Error: %v %v\n", ev.Name, ev.Message);
+					fmt.Println("## Error:")
+					printEvent(ev)
 				}
 
 			} else{
-				fmt.Printf("error\n");
+				fmt.Printf("error\n")
 			}
 
 		}
