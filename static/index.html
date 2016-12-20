@@ -1,0 +1,45 @@
+<html>
+<head>
+    <title>kubernetes event viewer</title>
+    <script type="text/javascript">
+    var wsUri = "ws://" + location.host + "/msg"; 
+
+    var output;  
+    function init() { 
+        output = document.getElementById("output"); 
+        initWebSocket(); 
+    } 
+
+    function initWebSocket() { 
+        websocket = new WebSocket(wsUri); 
+        websocket.onopen = function(evt) { 
+            writeToScreen("CONNECTED"); 
+            websocket.send("connect");
+        }; 
+        websocket.onclose = function(evt) { 
+            writeToScreen("DISCONNECTED"); 
+        }; 
+        websocket.onmessage = function(evt) { 
+            writeToScreen('<span style="color: blue;">' + evt.data+'</span>'); 
+        }; 
+        websocket.onerror = function(evt) { 
+            writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data); 
+        }; 
+    }  
+
+    function writeToScreen(message) { 
+        var pre = document.createElement("div"); 
+        pre.style.wordWrap = "break-word"; 
+        pre.innerHTML = message;
+        output.appendChild(pre);
+        output.insertBefore(pre, output.firstChild);
+    }  
+
+    window.addEventListener("load", init, false);
+    </script>
+</head>
+<body>
+    <h2>kubernetes event viewer</h2>  
+    <div id="output"></div>
+</body>
+</html>

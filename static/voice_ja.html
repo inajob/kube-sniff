@@ -1,0 +1,89 @@
+<html>
+<head>
+    <title>kubernetes event viewer</title>
+    <script type="text/javascript">
+    var wsUri = "ws://" + location.host + "/msg"; 
+    var stop;
+    var output;  
+
+    var transTable = [
+      [/^Killing container with docker id (.+)/, "コンテナを削除しているよ"],
+      [/^Deleted pod: (.+)/, "podを削除したよ"],
+      [/^Scaled down replica set (.+)/, "レプリカセットをスケールダウンしたよ"],
+      [/^Started container with docker id (.+)/, "コンテナを開始したよ"],
+      [/^Created container with docker id (.+)/, "コンテナを作成したよ"],
+      [/^pulling image (.+)/, "イメージをプルしてるよ"],
+      [/^Successfully pulled image (.+)/, "イメージのプルに成功したよ"],
+      [/^Created pod: (.+)/, "podを作成したよ"],
+      [/^Successfully assigned (.+)/, "デプロイ先が決まったよ"],
+      [/^Scaled up replica set (.+)/, "レプリカセットをスケールアップしたよ"],
+    ];
+
+    function init() { 
+        output = document.getElementById("output"); 
+        stop = document.getElementById("stop");
+        stop.addEventListener('click', function(){
+          speechSynthesis.cancel();
+        });
+        initWebSocket(); 
+    } 
+
+    function msg2ja(msg){
+      for(var i = 0; i < transTable.length; i ++){
+        var m = msg.match(transTable[i][0]);
+        if(m){
+          return transTable[i][1]
+        }
+      }
+    }
+
+    function initWebSocket() { 
+        websocket = new WebSocket(wsUri); 
+        websocket.onopen = function(evt) { 
+            writeToScreen("CONNECTED"); 
+            websocket.send("connect");
+        }; 
+        websocket.onclose = function(evt) { 
+            writeToScreen("DISCONNECTED"); 
+        }; 
+        websocket.onmessage = function(evt) { 
+            var obj = JSON.parse(evt.data);
+
+            var ssu = new SpeechSynthesisUtterance();
+            var voices = window.speechSynthesis.getVoices();
+            var msgJa = msg2ja(obj.message);
+            if(msgJa){
+              ssu.text = msgJa;
+              ssu.lang = 'ja-JP';
+              ssu.voice = voices[0];
+            }else{
+              ssu.text = obj.message;
+              ssu.lang = 'en-US';
+              ssu.voice = voices[3];
+            }
+            speechSynthesis.speak(ssu);
+
+            writeToScreen('<span style="color: blue;">' + obj.lastTimestamp + " " + obj.involvedObject.kind + "/" + obj.involvedObject.name  + " " +  obj.message +'</span>'); 
+        }; 
+        websocket.onerror = function(evt) { 
+            writeToScreen('<span style="color: red;">ERROR:</span> ' + evt.data); 
+        }; 
+    }  
+
+    function writeToScreen(message) { 
+        var pre = document.createElement("div"); 
+        pre.style.wordWrap = "break-word"; 
+        pre.innerHTML = message;
+        output.appendChild(pre);
+        output.insertBefore(pre, output.firstChild);
+    }  
+
+    window.addEventListener("load", init, false);
+    </script>
+</head>
+<body>
+    <h2>kubernetes event viewer</h2>  
+    <button id="stop">stop speak</button>
+    <div id="output"></div>
+</body>
+</html>
